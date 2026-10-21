@@ -10,6 +10,7 @@ import 'package:quax/group/group_screen.dart';
 import 'package:quax/home/_feed.dart';
 import 'package:quax/home/_missing.dart';
 import 'package:quax/home/_saved.dart';
+import 'package:quax/home/_videos.dart';
 import 'package:quax/home/home_model.dart';
 import 'package:quax/search/search.dart';
 import 'package:quax/subscriptions/subscriptions.dart';
@@ -29,6 +30,7 @@ class NavigationPage {
 
 final List<NavigationPage> defaultHomePages = [
   NavigationPage('feed', (c) => L10n.of(c).home, const Icon(Icons.home_outlined), const Icon(Icons.home)),
+  NavigationPage('videos', (c) => L10n.of(c).videos, const Icon(Icons.videocam_outlined), const Icon(Icons.videocam)),
   NavigationPage('subscriptions', (c) => L10n.of(c).subscriptions, const Icon(Icons.people_outlined),
       const Icon(Icons.people)),
   NavigationPage('trending', (c) => L10n.of(c).search, const Icon(Icons.search_outlined), const Icon(Icons.search)),
@@ -131,6 +133,10 @@ class _HomeScreenState extends State<_HomeScreen> {
                   return SavedScreen(
                     scrollController: scrollControllers[index]!,
                   );
+                case 'videos':
+                  return VideoFeedScreen(
+                    scrollController: scrollControllers[index]!,
+                  );
                 default:
                   return const MissingScreen();
               }
@@ -211,6 +217,14 @@ class _ScaffoldWithBottomNavigationState extends State<ScaffoldWithBottomNavigat
               title: Text(l10n.search),
               onTap: () =>
                   Navigator.pushNamed(context, routeSearch, arguments: SearchArguments(0, focusInputOnOpen: true)),
+            ),
+            ListTile(
+              leading: const Icon(Icons.videocam_outlined),
+              title: Text(l10n.videos),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.pushNamed(context, routeVideos);
+              },
             ),
             ListTile(
               leading: const Icon(Icons.settings),

@@ -11,6 +11,7 @@ const optionHelloLastBuild = 'hello.last_build';
 const optionHomePages = 'home.pages';
 const optionHomeInitialTab = 'home.initial_tab';
 const optionHomeDefaultFeedTab = 'home.default_feed_tab';
+const optionHomeVideosTabMigrated = 'home.videos_tab_migrated';
 
 const optionImageQuality = 'media.size';
 const optionMediaVideoQuality = 'media.video_quality';
@@ -113,6 +114,7 @@ const routeSettings = '/settings';
 const routeSettingsExport = '/settings/export';
 const routeSettingsHome = '/settings/home';
 const routeStatus = '/status';
+const routeVideos = '/videos';
 
 const discordInviteUrl = 'https://discord.gg/K7UHuywPWD';
 const issuesUrl = 'https://github.com/teskann/quax/issues';

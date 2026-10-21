@@ -96,6 +96,8 @@ class TweetVideo extends StatefulWidget {
   final bool disableControls;
   final String? tweetId;
   final int mediaIndex;
+  /// When true, long-press sets playback speed to 2.0 and release restores 1.0.
+  final bool longPressDoubleSpeed;
 
   const TweetVideo({
     super.key,
@@ -106,6 +108,7 @@ class TweetVideo extends StatefulWidget {
     this.disableControls = false,
     this.tweetId,
     this.mediaIndex = 0,
+    this.longPressDoubleSpeed = false,
   });
 
   // GIFs play on their own, silently and on a loop, all over the timeline.
@@ -550,11 +553,29 @@ class _TweetVideoState extends State<TweetVideo> with WidgetsBindingObserver {
       content = _acquireFuture == null ? _buildIdle() : _buildPlayer(key);
     }
 
-    return VisibilityDetector(
+    Widget player = VisibilityDetector(
       key: _visibilityKey,
       onVisibilityChanged: _onVisibilityChanged,
       child: KeyedSubtree(key: _playerKey, child: content),
     );
+
+    if (widget.longPressDoubleSpeed) {
+      player = GestureDetector(
+        behavior: HitTestBehavior.translucent,
+        onLongPressStart: (_) => _setSpeed(2.0),
+        onLongPressEnd: (_) => _setSpeed(1.0),
+        onLongPressCancel: () => _setSpeed(1.0),
+        child: player,
+      );
+    }
+
+    return player;
+  }
+
+  void _setSpeed(double speed) {
+    final controller = _pooled?.controller;
+    if (controller == null) return;
+    controller.setSpeed(speed);
   }
 
   /// Where the inline player is on screen: the fullscreen animation starts and ends there.

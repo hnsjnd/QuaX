@@ -22,6 +22,7 @@ import 'package:quax/group/group_screen.dart';
 import 'package:quax/home/_feed.dart';
 import 'package:quax/home/home_model.dart';
 import 'package:quax/home/home_screen.dart';
+import 'package:quax/home/_videos.dart';
 import 'package:quax/import_data_model.dart';
 import 'package:quax/onboarding/onboarding_screen.dart';
 import 'package:quax/profile/profile.dart';
@@ -212,6 +213,7 @@ Future<void> main() async {
     optionDownloadPath: '',
     optionDownloadType: optionDownloadTypeAsk,
     optionHomePages: defaultHomePages.map((e) => e.id).toList(),
+    optionHomeVideosTabMigrated: true,
     optionLocale: optionLocaleDefault,
     optionHomeInitialTab: 'feed',
     optionHomeDefaultFeedTab: feedTabs[0].id.name,
@@ -509,6 +511,7 @@ class _FritterAppState extends State<FritterApp> {
                     routeSettingsExport: (context) => const SettingsExportScreen(),
                     routeSettingsHome: (context) => const SettingsHomeFragment(),
                     routeStatus: (context) => const StatusScreen(),
+                    routeVideos: (context) => const VideoFeedScreen(showAppBar: true),
                   },
                   builder: (context, child) {
                     if (widget.onboarding) {

@@ -37,6 +37,20 @@ class HomeModel extends Store<List<HomePage>> {
     await execute(() async {
       var saved = prefs.getStringList(optionHomePages) ?? [];
 
+      // One-time: surface the Videos tab for upgrades that already had a custom tab list.
+      if (prefs.get(optionHomeVideosTabMigrated) != true) {
+        if (!saved.contains('videos')) {
+          final feedIdx = saved.indexOf('feed');
+          if (feedIdx >= 0) {
+            saved = [...saved]..insert(feedIdx + 1, 'videos');
+          } else {
+            saved = ['videos', ...saved];
+          }
+          await prefs.set(optionHomePages, saved);
+        }
+        await prefs.set(optionHomeVideosTabMigrated, true);
+      }
+
       var available = [
         ...defaultHomePages,
         ...groupsModel.state.map((e) =>
