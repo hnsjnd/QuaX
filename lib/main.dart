@@ -212,7 +212,8 @@ Future<void> main() async {
     optionDisableScreenshots: false,
     optionDownloadPath: '',
     optionDownloadType: optionDownloadTypeAsk,
-    optionHomePages: defaultHomePages.map((e) => e.id).toList(),
+    // Home-first like official X: Videos reels stay optional (settings / drawer), not a default bottom tab.
+    optionHomePages: defaultHomePages.where((e) => e.id != 'videos').map((e) => e.id).toList(),
     optionHomeVideosTabMigrated: true,
     optionLocale: optionLocaleDefault,
     optionHomeInitialTab: 'feed',

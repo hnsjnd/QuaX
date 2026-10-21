@@ -402,7 +402,8 @@ class _TweetMediaThing extends StatelessWidget {
           loop: false,
           username: username,
           tweetId: tweetId,
-          mediaIndex: mediaIndex);
+          mediaIndex: mediaIndex,
+          longPressDoubleSpeed: true);
     } else if (item.type == 'photo') {
       media = TweetPhoto(
           size: size, uri: item.mediaUrlHttps!, fit: BoxFit.contain, pullToClose: pullToClose, inPageView: inPageView);
