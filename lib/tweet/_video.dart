@@ -5,6 +5,7 @@ import 'dart:ui' as ui;
 import 'package:better_player_plus/better_player_plus.dart'
     hide VisibilityDetector, VisibilityDetectorController, VisibilityInfo;
 import 'package:dart_twitter_api/twitter_api.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/services.dart';
 import 'package:material_ui/material_ui.dart';
 import 'package:pref/pref.dart';
@@ -143,6 +144,15 @@ class _TweetVideoState extends State<TweetVideo> with WidgetsBindingObserver {
   bool _retriedAfterDecoderFailure = false;
   Timer? _pauseTimer;
   void Function(BetterPlayerEvent)? _onEvent;
+
+  // Long-press 2x: use Listener+Timer (not GestureDetector) so QuaxControls'
+  // opaque tap/double-tap recognizers cannot win the gesture arena and cancel
+  // the long-press. Pointer events still reach ancestors regardless of arena.
+  Timer? _longPressSpeedTimer;
+  Offset? _longPressDownPos;
+  bool _holdingDoubleSpeed = false;
+  static const _longPressSpeedDelay = Duration(milliseconds: 350);
+  static const _longPressMoveSlop = 24.0;
 
   String? get _cacheKey => widget.tweetId == null ? null : '${widget.tweetId}:${widget.mediaIndex}';
 
@@ -560,21 +570,90 @@ class _TweetVideoState extends State<TweetVideo> with WidgetsBindingObserver {
     );
 
     if (widget.longPressDoubleSpeed) {
-      player = GestureDetector(
+      player = Listener(
         behavior: HitTestBehavior.translucent,
-        onLongPressStart: (_) => _setSpeed(2.0),
-        onLongPressEnd: (_) => _setSpeed(1.0),
-        onLongPressCancel: () => _setSpeed(1.0),
-        child: player,
+        onPointerDown: _onLongPressSpeedPointerDown,
+        onPointerMove: _onLongPressSpeedPointerMove,
+        onPointerUp: (_) => _endLongPressSpeed(),
+        onPointerCancel: (_) => _endLongPressSpeed(),
+        child: Stack(
+          fit: StackFit.passthrough,
+          children: [
+            player,
+            if (_holdingDoubleSpeed)
+              const Positioned.fill(
+                child: IgnorePointer(
+                  child: Center(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Color(0xCC000000),
+                        borderRadius: BorderRadius.all(Radius.circular(8)),
+                      ),
+                      child: Padding(
+                        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        child: Text(
+                          '2x',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
       );
     }
 
     return player;
   }
 
+  void _onLongPressSpeedPointerDown(PointerDownEvent event) {
+    if (event.buttons != kPrimaryButton) return;
+    _longPressDownPos = event.position;
+    _longPressSpeedTimer?.cancel();
+    _longPressSpeedTimer = Timer(_longPressSpeedDelay, () {
+      _longPressSpeedTimer = null;
+      if (!mounted || !widget.longPressDoubleSpeed) return;
+      _setSpeed(2.0);
+      if (!_holdingDoubleSpeed) setState(() => _holdingDoubleSpeed = true);
+    });
+  }
+
+  void _onLongPressSpeedPointerMove(PointerMoveEvent event) {
+    // Cancel only before 2x engages — once holding, keep 2x until release
+    // (small finger jitter / TikTok-style hold). Large move before the timer
+    // means the user is scrolling the feed, not holding for speed.
+    if (_holdingDoubleSpeed || _longPressDownPos == null) return;
+    if ((event.position - _longPressDownPos!).distance > _longPressMoveSlop) {
+      _cancelLongPressSpeedTimer();
+    }
+  }
+
+  void _cancelLongPressSpeedTimer() {
+    _longPressSpeedTimer?.cancel();
+    _longPressSpeedTimer = null;
+    _longPressDownPos = null;
+  }
+
+  void _endLongPressSpeed() {
+    final wasHolding = _holdingDoubleSpeed;
+    _cancelLongPressSpeedTimer();
+    if (wasHolding) {
+      _setSpeed(1.0);
+      if (mounted) setState(() => _holdingDoubleSpeed = false);
+    }
+  }
+
   void _setSpeed(double speed) {
     final controller = _pooled?.controller;
     if (controller == null) return;
+    // Fire-and-forget: setSpeed is async in better_player_plus but we must not
+    // block the pointer handlers; ignoring the Future is intentional.
     controller.setSpeed(speed);
   }
 
@@ -688,6 +767,12 @@ class _TweetVideoState extends State<TweetVideo> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _pauseTimer?.cancel();
+    _longPressSpeedTimer?.cancel();
+    if (_holdingDoubleSpeed) {
+      // Best-effort restore if the widget dies mid-hold.
+      _pooled?.controller.setSpeed(1.0);
+      _holdingDoubleSpeed = false;
+    }
     _detachListeners();
     final key = _cacheKey;
     if (key != null) _pool?.markHidden(key, this);
